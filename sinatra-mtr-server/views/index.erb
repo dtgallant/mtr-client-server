@@ -1,0 +1,26 @@
+<!-- WE NEED MORE JS!!!!! -->
+<script>
+	Modernizr.load({
+		complete: function(){
+			log("Whoa, this is inline in my view file!", "But is jQuery loaded?", $, "Yup.");
+		}
+	});
+</script>
+
+<!--p><%= link_to 'Go home', '/' %> <code><==</code> <em>made with <code>link_to</code> helper!</em></p-->
+
+<!--h2>Form Tag Helpers</h2>
+<form action='/'>
+	<p>
+		<b><code>input_for</code></b><br>
+		<%= input_for 'input' %><br>
+		<%= link_to 'See this filled with "here is some input"', '/?input=here is some input' %>
+		<%= '<br>notice how the value gets set to the value of <code>params[:input]</code> :)' if params[:input] %>
+	</p>
+	<p>
+		<b><code>select_for</code></b><br>
+		<%= select_for 'select', { 'Nothing' => :zero, 'One' => :one, 'The second' => :two } %><br>
+		<%= link_to 'See the second option selected', '/?select=one' %>
+		<%= '<br>oooooh... <b>ahhhhhh</b>' if params[:select] %>
+	</p>
+</form-->
