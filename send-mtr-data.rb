@@ -5,6 +5,7 @@
 
 #script settings
 host_url='http://foxtrot.orangeblueprint.com/processreport'
+#host_url='http://foxtrot.orangeblueprint.com:3000/processreport'
 #host_url='http://localhost:3000/processreport'
 server_key='wqqryyhbifqtdzirlscpxkdubwamgnnqlpujwcvdrijkgdjyxn'
 
