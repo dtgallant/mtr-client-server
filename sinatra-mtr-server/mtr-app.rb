@@ -9,7 +9,7 @@ require 'json'
 require 'date'
 require 'sinatra/cross_origin'
 
-require_relative './settings.rb' #config
+#require_relative './settings.rb' #config
 
 # -------------------------------------------------------------------
 
@@ -58,7 +58,7 @@ post '/processreport' do
 	group_code = params['group_code']
 	host_requested = params['host_requested']
 
-	sql_hop_records="INSERT INTO hop_records (id,group_code,host_requested,hop_number,hop_host,packet_loss,num_packets_sent,
+	sql_hop_records="INSERT INTO hop_records (group_code,host_requested,hop_number,hop_host,packet_loss,num_packets_sent,
 		last_packet_latency,avg_packet_latency,best_packet_latency,worst_packet_latency,standard_deviation,created_at) 
 			VALUES " # ( ?,?,?,?,?,?,?,?,?,?,?,?,? )"
 
@@ -78,8 +78,12 @@ post '/processreport' do
 			#process data
 			r = report_data_line.split(/\s+/)
 	
+			r.each_with_index do |item,i|
+				puts "#{i}: #{item}"
+			end
+			
 			#bypass the first line of the report, all others go in db		
-			if (r[0].match('HOST:')==nil) then
+			if (r[0].match('HOST:')==nil && r[0].match('Start:')==nil) then
 				hop_number = r[1].gsub!(/\D/,'') #remove excess chars
 				hop_host = r[2]
 				packet_loss = r[3]
@@ -92,11 +96,9 @@ post '/processreport' do
 
 				t = Time.now
 				
-				dbh.query(sql_hop_records + "('',#{group_code}','#{host_requested}','#{hop_number}','#{hop_host}','#{packet_loss}','#{num_packets_sent}','#{last_packet_latency}','#{avg_packet_latency}','#{best_packet_latency}','#{worst_packet_latency}','#{standard_deviation}','#{t.strftime("%Y-%m-%d %H:%M:%S")}')")
+				dbh.query(sql_hop_records + "('#{group_code}','#{host_requested}','#{hop_number}','#{hop_host}','#{packet_loss}','#{num_packets_sent}','#{last_packet_latency}','#{avg_packet_latency}','#{best_packet_latency}','#{worst_packet_latency}','#{standard_deviation}','#{t.strftime("%Y-%m-%d %H:%M:%S")}')")
 				
-				#result_array.each_with_index do |item,i|
-					#puts "#{i}: #{item}"
-				#end
+				
 			end
 				
 			"{\"status\":true}"
