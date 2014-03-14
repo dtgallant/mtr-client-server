@@ -9,6 +9,8 @@ require 'json'
 require 'date'
 require 'sinatra/cross_origin'
 
+require_relative './settings.rb' #config
+
 # -------------------------------------------------------------------
 
 #session[:request_db_session] =
@@ -53,32 +55,62 @@ post '/processreport' do
 
 	server_key = params['server_key']
 	report_data_line = params['report_data_line']
-	
-	puts "server key is: #{server_key}"
+	group_code = params['group_code']
+	host_requested = params['host_requested']
+
+	sql_hop_records="INSERT INTO hop_records (id,group_code,host_requested,hop_number,hop_host,packet_loss,num_packets_sent,
+		last_packet_latency,avg_packet_latency,best_packet_latency,worst_packet_latency,standard_deviation,created_at) 
+			VALUES " # ( ?,?,?,?,?,?,?,?,?,?,?,?,? )"
+
+	puts "#{@db_host}|#{@db_user}|#{@db_pass}|#{@db_name}"
+
+	@db_host='localhost'
+	@db_user='root'
+	@db_pass=''
+	@db_name='mtr_db'
 
 	begin
+		# connect to the MySQL server
+		dbh = Mysql2::Client.new(:host => @db_host, :username => @db_user, :password => @db_pass,:database => @db_name)
+		
 		if (server_key == SERVER_KEY) then
 		
 			#process data
-			puts "report data line incoming:"
-			puts report_data_line
-			result_array = report_data_line.split(/\s+/)
-			
-			result_array.each_with_index do |item,i|
-				puts "#{i}: #{item}"
+			r = report_data_line.split(/\s+/)
+	
+			#bypass the first line of the report, all others go in db		
+			if (r[0].match('HOST:')==nil) then
+				hop_number = r[1].gsub!(/\D/,'') #remove excess chars
+				hop_host = r[2]
+				packet_loss = r[3]
+				num_packets_sent = r[4]
+				last_packet_latency = r[5]
+				avg_packet_latency = r[6]
+				best_packet_latency = r[7]
+				worst_packet_latency = r[8]
+				standard_deviation = r[9]
+
+				t = Time.now
+				
+				dbh.query(sql_hop_records + "('',#{group_code}','#{host_requested}','#{hop_number}','#{hop_host}','#{packet_loss}','#{num_packets_sent}','#{last_packet_latency}','#{avg_packet_latency}','#{best_packet_latency}','#{worst_packet_latency}','#{standard_deviation}','#{t.strftime("%Y-%m-%d %H:%M:%S")}')")
+				
+				#result_array.each_with_index do |item,i|
+					#puts "#{i}: #{item}"
+				#end
 			end
-
-
-
-
+				
 			"{\"status\":true}"
 		else
 			html_page("Access Denied","")
 		end
 	
-	rescue
-# 		"#{callback}({})"
-		"{}" #POST MOD
+	rescue Mysql2::Error => e
+		puts "Error code: #{e.errno}"
+		puts "Error message: #{e.error}"
+		puts "Error SQLSTATE: #{e.sqlstate}" if e.respond_to?("sqlstate")
+	ensure
+		# disconnect from server
+		dbh.close if dbh
 	end
 	
 end
