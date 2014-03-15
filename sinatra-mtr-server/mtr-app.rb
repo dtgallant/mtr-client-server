@@ -8,8 +8,14 @@ require 'mysql2'
 require 'json'
 require 'date'
 require 'sinatra/cross_origin'
+require 'sinatra/activerecord'
+require 'yaml'
+
+require_relative './models/models.rb'
 
 #require_relative './settings.rb' #config
+DB_CONFIG = YAML::load(File.open('config/database.yml'))
+set :database, "mysql2://#{DB_CONFIG['username']}:#{DB_CONFIG['password']}@#{DB_CONFIG['host']}:#{DB_CONFIG['port']}/#{DB_CONFIG['database']}"
 
 # -------------------------------------------------------------------
 
@@ -46,6 +52,14 @@ get '/' do
 
 end
 
+#produce a useful graph of the data
+get '/graph' do
+
+	@hops= HopRecord.all
+
+
+	erb :graph
+end
 
 #import the mtr report data into the database
 post '/processreport' do
