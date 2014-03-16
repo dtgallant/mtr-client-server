@@ -8,11 +8,11 @@
 
 	num_hops = @hops.select('DISTINCT hop_number').count
 	(0..num_hops-1).each do |n|
-		graph_array[n] = @hops.select('CAST(packet_loss) AS UNSIGNED, created_at').where(hop_number:n+1).order('id DESC').limit(4500).group("date_format(created_at, '%Y-%m-%d %H')").average('packet_loss')	
+		graph_array[n] = @hops.select('CAST(packet_loss) AS UNSIGNED, created_at').where(hop_number:n+1).group("date_format(created_at, '%H')").average('packet_loss')
 	end
 
 	(0..num_hops-1).each do |n|
-		graph_array2[n] = @hops.select('avg_packet_latency, created_at').where(hop_number:n+1).order('id DESC').limit(4500).group("date_format(created_at, '%Y-%m-%d %H')").average('avg_packet_latency')	
+		graph_array2[n] = @hops.select('avg_packet_latency, created_at').where(hop_number:n+1).group("date_format(created_at, '%H')").average('avg_packet_latency')	
 	end
 
 %>
@@ -32,6 +32,7 @@
 
 		var xaxis_data, yaxis_data, red_colour,rgba;
 		var yaxis_datasets = [];
+		var tm_shift;
 		
 		console.log(graph_array);
 
@@ -41,7 +42,13 @@
 		  	yaxis_data = [];
 		  	
 		  	for (key in graph_array[i]) {
-				xaxis_data.push(key);
+					
+					tm_shift = parseInt(key) - 4;
+					if (tm_shift < 0) {
+						tm_shift+=24; 
+					} 
+					
+					xaxis_data.push(tm_shift);
 		  	 	yaxis_data.push(parseFloat(graph_array[i][key]));
 		  	}	
 
@@ -84,7 +91,13 @@
 		  	yaxis_data = [];
 		  	
 		  	for (key in graph_array2[i]) {
-				xaxis_data.push(key);
+					
+					tm_shift = parseInt(key) - 4;
+					if (tm_shift < 0) {
+						tm_shift+=24; 
+					} 
+
+					xaxis_data.push(tm_shift);
 		  	 	yaxis_data.push(parseFloat(graph_array2[i][key]));
 		  	}	
 
@@ -92,7 +105,16 @@
 			red_colour+=i*50
 			rgba = "rgba(200,220,220,0.5)";
 			rgba_fill = "rgba(220,220,220,0)";
-			rgba_stroke = "rgba(36,8,76,1.0)"
+			rgba_stroke = "rgba(220,220,220,1.0)"
+
+			if (i==0 || i==1 || i==2) {
+				rgba_stroke = "rgba(240,7,94,1.0)"
+			}
+			
+			if (i==graph_array.length-1) {
+				rgba_stroke = "rgba(11,181,70,1.0)"
+			}
+
 			yaxis_datasets[i] = {
 				fillColor : rgba_fill,
 				strokeColor : rgba_stroke,

@@ -20,7 +20,7 @@ gem "activerecord"
 gem "sinatra-activerecord"
 gem "groupdate"
 gem "chartkick"
-
+gem "active_median"
 
 
 group :production do

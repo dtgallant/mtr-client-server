@@ -6,8 +6,9 @@ host: localhost
 database: mtr_db
 pool: 5
 username: root
-password: winkwink
+password: charliemonkey
 port: 3306
+
 # development:
 #   adapter: mysql2
 #   encoding: utf8
