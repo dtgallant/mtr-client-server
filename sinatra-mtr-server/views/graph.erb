@@ -1,54 +1,110 @@
 <script src="/js/Chart.js"></script>
 <script src="/js/jquery-1.11.0.min.js"></script>
 
-<canvas id="node2_chart" height="500" width="500"></canvas>
+<%
+	#generate dataset on server side
+	graph_array = []
+	graph_array2 = []
+
+	num_hops = @hops.select('DISTINCT hop_number').count
+	(0..num_hops-1).each do |n|
+		graph_array[n] = @hops.select('CAST(packet_loss) AS UNSIGNED, created_at').where(hop_number:n+1).order('id DESC').limit(4500).group("date_format(created_at, '%Y-%m-%d %H')").average('packet_loss')	
+	end
+
+	(0..num_hops-1).each do |n|
+		graph_array2[n] = @hops.select('avg_packet_latency, created_at').where(hop_number:n+1).order('id DESC').limit(4500).group("date_format(created_at, '%Y-%m-%d %H')").average('avg_packet_latency')	
+	end
+
+%>
+
+<canvas id="chart1" height="700" width="1000"></canvas>
+
+<canvas id="chart2" height="700" width="1000"></canvas>
 
 <script type="text/javascript">	
 	
 	$(function() {
 		window.MG = {}; //namespace
 
-	  	MG.hops_node2 = <%= @hops.select('CAST(packet_loss) AS UNSIGNED, created_at').where(hop_number:2).group("date_format(created_at, '%Y-%m-%d %H')").average('packet_loss').to_json %>;
-	  	MG.node2_xaxis = [];
-	  	MG.node2_yaxis = [];
+		//link dataset to client (javascript)
+		var graph_array = <%=graph_array.to_json %>
+		var graph_array2 = <%=graph_array2.to_json %>
 
-	  	console.log(MG.hops_node2);
-
-	  	// for (var i=0;i< MG.hops_node2.length; i++) {
-	  	// 	MG.node2_xaxis.push(MG.hops_node2[i].created_at);
-	  	// 	MG.node2_yaxis.push(parseFloat(MG.hops_node2[i].packet_loss));
-	  	// }
-
-	  	for (key in MG.hops_node2) {
-			MG.node2_xaxis.push(key);
-	  	 	MG.node2_yaxis.push(parseFloat(MG.hops_node2[key]));
-	  	}	
-
-	  	console.log(MG.node2_xaxis);
-	  	console.log(MG.node2_yaxis);
+		var xaxis_data, yaxis_data, red_colour,rgba;
+		var yaxis_datasets = [];
 		
+		console.log(graph_array);
+
+		for (var i=0;i < graph_array.length; i++) {
+		  
+		  	xaxis_data = [];
+		  	yaxis_data = [];
+		  	
+		  	for (key in graph_array[i]) {
+				xaxis_data.push(key);
+		  	 	yaxis_data.push(parseFloat(graph_array[i][key]));
+		  	}	
+
+	  		console.log(xaxis_data);
+	  		console.log(yaxis_data);
+		
+			//data for this line, set different colour for each line
+			red_colour+=i*50
+			rgba = "rgba(200,220,220,0.5)";
+			rgba_fill = "rgba(220,220,220,0)";
+			rgba_stroke = "rgba(220,220,220,1.0)"
+			
+			if (i==0 || i==1 || i==2) {
+				rgba_stroke = "rgba(240,7,94,1.0)"
+			}
+			
+			if (i==graph_array.length-1) {
+				rgba_stroke = "rgba(11,181,70,1.0)"
+			}
+
+			yaxis_datasets[i] = {
+				fillColor : rgba_fill,
+				strokeColor : rgba_stroke,
+				pointColor : rgba,
+				pointStrokeColor : "#fff",
+				data : yaxis_data
+			}
+		}
+	
 		var data = {
-			labels : MG.node2_xaxis,
-			//labels : ["January","February","March","April","May","June","July"],
-			datasets : [
-				{
-					fillColor : "rgba(220,220,220,0.5)",
-					strokeColor : "rgba(220,220,220,1)",
-					pointColor : "rgba(220,220,220,1)",
-					pointStrokeColor : "#fff",
-					data : MG.node2_yaxis
-					//data : [65,59,90,81,56,55,40]
-				}
-				/*
-				{
-					fillColor : "rgba(151,187,205,0.5)",
-					strokeColor : "rgba(151,187,205,1)",
-					pointColor : "rgba(151,187,205,1)",
-					pointStrokeColor : "#fff",
-					data : [28,48,40,19,96,27,100]
-				}
-				*/
-			]
+			labels : xaxis_data, //use the last line's xaxis data, all lines are the same
+			datasets : yaxis_datasets 
+		};
+
+		yaxis_datasets = [];
+		
+		for (var i=0;i < graph_array2.length; i++) {
+		  
+		  	xaxis_data = [];
+		  	yaxis_data = [];
+		  	
+		  	for (key in graph_array2[i]) {
+				xaxis_data.push(key);
+		  	 	yaxis_data.push(parseFloat(graph_array2[i][key]));
+		  	}	
+
+			//data for this line, set different colour for each line
+			red_colour+=i*50
+			rgba = "rgba(200,220,220,0.5)";
+			rgba_fill = "rgba(220,220,220,0)";
+			rgba_stroke = "rgba(36,8,76,1.0)"
+			yaxis_datasets[i] = {
+				fillColor : rgba_fill,
+				strokeColor : rgba_stroke,
+				pointColor : rgba,
+				pointStrokeColor : "#fff",
+				data : yaxis_data
+			}
+		}
+	
+		var data2 = {
+			labels : xaxis_data, //use the last line's xaxis data, all lines are the same
+			datasets : yaxis_datasets 
 		};
 
 		var options = {
@@ -87,7 +143,7 @@
 			scaleFontStyle : "normal",
 			
 			//String - Scale label font colour	
-			scaleFontColor : "#666",	
+			scaleFontColor : "#000",	
 			
 			///Boolean - Whether grid lines are shown across the chart
 			scaleShowGridLines : true,
@@ -133,9 +189,11 @@
 		
 		};
 
-		var ctx = document.getElementById("node2_chart").getContext("2d");
-		MG.node2_chart = new Chart(ctx).Line(data,options);
+		var ctx = document.getElementById("chart1").getContext("2d");
+		var chart = new Chart(ctx).Line(data,options);
 
+		var ctx2 = document.getElementById("chart2").getContext("2d");
+		var chart2 = new Chart(ctx2).Line(data2,options);
 
 	});
 
